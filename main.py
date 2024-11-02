@@ -69,45 +69,47 @@ def register(username, password):
 async def get_koordinat(session, location):
     url = f"https://nominatim.openstreetmap.org/search?q={location}&format=json&limit=1&countrycodes=ID"
 
-    async with session.get(url) as response:
+    try:
+        async with session.get(url) as response:
 
-        # Jika respon berhasil
-        if response.status == 200:
-            data = await response.json()
+            if response.status == 200:
+                data = await response.json()
 
-            # Jika lokasi ditemukan
-            if len(data) > 0:
-                print(f'{location} ditemukan.')
-                print(f'{data[0]["display_name"]}\n')
-                lat = float(data[0]['lat'])
-                lon = float(data[0]['lon'])
-                return lat, lon
-            # Jika lokasi tidak ditemukan
+                if data:
+                    print(f'{location} ditemukan.')
+                    print(f'{data[0]["display_name"]}\n')
+                    lat = float(data[0]['lat'])
+                    lon = float(data[0]['lon'])
+                    return lat, lon
+                else:
+                    print("Lokasi tidak ditemukan.")
+                    return None            
             else:
-                print("Lokasi tidak ditemukan.")
+                print("Gagal mengakses API Nominatim.")
                 return None
-            
-        # Jika respon gagal
-        else:
-            print("Gagal mengakses API Nominatim.")
-            return None
+
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+        return None
 
 # Fungsi untuk menghitung jarak antara dua titik menggunakan OSRM
 async def get_jarak(session, titik_jemput, titik_tujuan):
     url = f"http://router.project-osrm.org/route/v1/driving/{titik_jemput[1]},{titik_jemput[0]};{titik_tujuan[1]},{titik_tujuan[0]}?overview=false"
 
-    async with session.get(url) as response:
+    try:
+        async with session.get(url) as response:
 
-        # Jika respon berhasil
-        if response.status == 200:
-            data = await response.json()
-            jarak = data['routes'][0]['distance'] / 1000
-            return jarak
-        
-        # Jika respon gagal
-        else:
-            print(RED + BOLD +"Gagal mengakses API OSRM."+ RESET)
-            return None
+            if response.status == 200:
+                data = await response.json()
+                jarak = data['routes'][0]['distance'] / 1000
+                return jarak
+            
+            else:
+                print(RED + BOLD +"Gagal mengakses API OSRM."+ RESET)
+                return None
+
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
 
 # Fungsi Untuk Membuat Pesanan
 async def pesan(user_id):
@@ -136,7 +138,6 @@ async def pesan(user_id):
                 handle_invalid_pilihan()
 
         async with aiohttp.ClientSession() as session:
-            # while True:
                 while True:
                     lokasi_jemput = input(YELLOW + "Masukkan nama lokasi penjemputan: " + RESET)
                     if not lokasi_jemput:
@@ -148,7 +149,6 @@ async def pesan(user_id):
                         break
                     else:
                         print(RED + BOLD + "Lokasi penjemputan tidak ditemukan. Silakan coba lagi." + RESET)
-
 
                 while True:
                     lokasi_tujuan = input(YELLOW + "Masukkan nama lokasi tujuan: " + RESET)
@@ -162,8 +162,6 @@ async def pesan(user_id):
                     else:
                         print(RED + BOLD + "Lokasi tujuan tidak ditemukan. Silakan coba lagi." + RESET)
 
-
-
                 # Jika koordinat ditemukan
                 if koordinat_jemput and koordinat_tujuan:
                     jarak = await get_jarak(session, koordinat_jemput, koordinat_tujuan)
@@ -174,39 +172,60 @@ async def pesan(user_id):
                         total_harga = layanan_terpilih['harga'] * jarak
 
                         print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
-
-                        # Meminta konfirmasi sebelum menyimpan pesanan
-                        confirm = input(YELLOW + "Apakah data yang diinputkan sudah benar? (y/n): " + RESET)
-                        if confirm.lower() == 'y':
-                            df_pesanan = pd.read_csv('data/table_pesanan.csv', sep=';')
-                            if not df_pesanan['id'].empty:
-                                id = df_pesanan['id'].max() + 1
-                            else:
-                                id = 1
-                            # Membuat DataFrame untuk pesanan baru
-                            pesanan_baru = pd.DataFrame([{
-                                'id': id,
-                                'user_id': user_id,
-                                'lokasi_jemput': lokasi_jemput,
-                                'lokasi_tujuan': lokasi_tujuan,
-                                'jarak': jarak,
-                                'layanan': layanan_terpilih['layanan'],
-                                'total_harga': total_harga,
-                                'status': 'diproses',
-                                'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                            }])
-
-                            with open('data/table_pesanan.csv', mode='a', newline='', encoding='utf-8') as f:
-                                pesanan_baru.to_csv(f, header=False, index=False, sep=';')
-
-                            print(GREEN+BOLD+"Pesanan telah disimpan.Silahkan menunggu pemrosesan pesanan."+RESET)
-                            input("Tekan Enter untuk melanjutkan...")
-                            break
+                        
 
                     else:
-                        print(RED + BOLD + "Gagal menghitung jarak." + RESET)
+                        print(RED + BOLD + "Gagal menghitung jarak.\n" + RESET)
+                        pilih = input(YELLOW + "Apakah ingin memasukkan jarak manual ? (y/n): " + RESET)
+                        if pilih.lower() == 'y':
+                            while True:
+                                try:
+                                    jarak = float(input(YELLOW + "Masukkan jarak (dalam satuan KM): " + RESET))
+                                    jarak = round(jarak)
+                                    break
+                                except ValueError:
+                                    print(RED + BOLD + "Jarak harus berupa angka." + RESET)
+
+                            total_harga = layanan_terpilih['harga'] * jarak
+                            
+                            print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
+
+                        elif pilih.lower() == 'n':
+                            continue
+                        else:
+                            handle_invalid_pilihan()
+                            
                 else:
-                    print("Lokasi tidak ditemukan.")
+                        print("Lokasi tidak ditemukan.")
+
+                if jarak and total_harga:
+                    # Meminta konfirmasi sebelum menyimpan pesanan
+                    confirm = input(YELLOW + "Apakah data yang diinputkan sudah benar? (y/n): " + RESET)
+                    if confirm.lower() == 'y':
+                        df_pesanan = pd.read_csv('data/table_pesanan.csv', sep=';')
+                        if not df_pesanan['id'].empty:
+                            id = df_pesanan['id'].max() + 1
+                        else:
+                            id = 1
+                        # Membuat DataFrame untuk pesanan baru
+                        pesanan_baru = pd.DataFrame([{
+                            'id': id,
+                            'user_id': user_id,
+                            'lokasi_jemput': lokasi_jemput,
+                            'lokasi_tujuan': lokasi_tujuan,
+                            'jarak': jarak,
+                            'layanan': layanan_terpilih['layanan'],
+                            'total_harga': total_harga,
+                            'status': 'diproses',
+                            'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        }])
+
+                        with open('data/table_pesanan.csv', mode='a', newline='', encoding='utf-8') as f:
+                            pesanan_baru.to_csv(f, header=False, index=False, sep=';')
+
+                        print(GREEN+BOLD+"Pesanan telah disimpan.Silahkan menunggu pemrosesan pesanan."+RESET)
+                        input("Tekan Enter untuk melanjutkan...")
+                    break
 
 
 def manu_admin(user_id):
