@@ -216,19 +216,19 @@ def manu_admin(user_id):
         print("masukkan pilihan :")
         print("1. konfirmasi pesanan")
         print("2. manage user")
-        print("3. manage pesanan")
-        print("4. manage layanan")
+        print("3. manage layanan")
+        print("4. manage pesanan")
         print("5. logout")
         pilih = input(YELLOW + "masukkan pilihan :" + RESET)
 
         if pilih == "1":
             konfirmasi_pesanan()
         elif pilih == "2":
-            menu_manage_user()
+            menu_manage_user(user_id)
         elif pilih == "3":
-            pass
+            menu_manage_layanan()
         elif pilih == "4":
-            pass
+            menu_manage_pesanan(user_id)
         elif pilih == "5":
             break
         else:
@@ -253,7 +253,7 @@ def menu_user(user_id):
         else:
             handle_invalid_pilihan()
 
-def menu_manage_user():
+def menu_manage_user(user_id):
     while True:
         os.system('cls')
         print(GREEN + BOLD + "Manage User" +RESET)
@@ -289,6 +289,7 @@ def menu_manage_user():
             else:
                 print(RED + user['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
+
         elif pilih == "2":
             read_user()
             input("Tekan Enter untuk melanjutkan...")
@@ -300,9 +301,10 @@ def menu_manage_user():
             while True:
                 try:
                     id = int(input("Masukkan ID user: ").strip())
-                    if id:
-                        break
-                    print(RED + "ID user tidak boleh kosong" + RESET)
+                    if id == user_id:
+                        print(RED + "ID user tidak boleh sama dengan ID yang login saat ini" + RESET)
+                        continue
+                    break
                 except ValueError:
                     print(RED + "ID user harus berupa angka" + RESET)
 
@@ -323,25 +325,131 @@ def menu_manage_user():
             else:
                 print(RED + user['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
+        
         elif pilih == "4":
-            break
+            read_user()
+    
+            # Meminta ID user yang ingin dihapus
+            while True:
+                try:
+                    id = int(input("Masukkan ID user: ").strip())
+                    if id == user_id:
+                        print(RED + "ID user tidak boleh sama dengan ID yang login saat ini" + RESET)
+                        continue
+                    
+                    break
+                except ValueError:
+                    print(RED + "ID user harus berupa angka" + RESET)
+
+            user = delete_user(id)
+
+            if user['status'] == "success":
+                print(GREEN + user['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+            else:
+                print(RED + user['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+        
         elif pilih == "5":
             break
         else:
             handle_invalid_pilihan()
 
-def menu_manage_pesanan(user_id):
-    pass
+def menu_manage_layanan():
+    while True:
+        os.system('cls')
+        print(GREEN + BOLD + "Manage Layanan" +RESET)
+        print("pilihan :")
+        print("1. tambah layanan")
+        print("2. lihat layanan")
+        print("3. ubah layanan")
+        print("4. hapus layanan")
+        print("5. kembali")
+        pilih = input("masukkan pilihan :")
 
-def menu_manage_layanan(user_id):
+        if pilih == "1":
+            while True:
+                layanan = input("Masukkan layanan: ").strip()
+                if layanan:
+                    break
+                print(RED + "layanan tidak boleh kosong" + RESET)
+            while True:
+                try:
+                    harga = int(input("Masukkan harga: "))
+                    if harga:
+                        break
+                    print(RED + "harga tidak boleh kosong" + RESET)
+                except ValueError:
+                    print(RED + "harga harus berupa angka" + RESET)
+
+            layanan_baru = create_layanan(layanan,harga)
+            if layanan_baru['status'] == "success":
+                print(GREEN + layanan_baru['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+            else:
+                print(RED + layanan_baru['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+        
+        elif pilih == "2":
+            read_layanan()
+            input("Tekan Enter untuk melanjutkan...")
+        
+        elif pilih == "3":
+            read_layanan()
+    
+            # Meminta ID layanan yang ingin diubah
+            while True:
+                try:
+                    id = int(input("Masukkan ID layanan: ").strip())
+                    break
+                except ValueError:
+                    print(RED + "ID layanan harus berupa angka" + RESET)
+
+            layanan = input("Masukkan layanan (kosongkan untuk mempertahankan nilai lama): ").strip()            
+            while True:
+                try:
+                    harga = int(input("Masukkan harga (masukkan 0 untuk menggunakan harga lama): ").strip())
+                    break
+                except ValueError:
+                    print(RED + "harga harus berupa angka" + RESET)
+
+            layanan = update_layanan(id, layanan, harga)
+
+            if layanan['status'] == "success":
+                print(GREEN + layanan['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+            else:
+                print(RED + layanan['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+        
+        elif pilih == "4":
+            read_layanan()
+
+            while True:
+                try:
+                    id = int(input("Masukkan ID layanan: ").strip())
+                    break
+                except ValueError:
+                    print(RED + "ID layanan harus berupa angka" + RESET)
+
+            layanan = delete_layanan(id)
+
+            if layanan['status'] == "success":
+                print(GREEN + layanan['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+            else:
+                print(RED + layanan['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+        
+        elif pilih == "5":
+            break
+
+def menu_manage_pesanan(user_id):
     pass
 
 def handle_invalid_pilihan():
     print(RED + BOLD + "Pilihan tidak valid" + RESET)
     input("Tekan Enter untuk melanjutkan...")
-
-
-
 
 # Fungsi utama
 def main():

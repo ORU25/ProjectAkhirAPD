@@ -1,5 +1,5 @@
-import pandas as pd
-from tabulate import tabulate
+import pandas as pd #untuk membaca file csv (pip install pandas)
+from tabulate import tabulate #untuk membuat tabel (pip install tabulate)
 
 def create_user(username, password, role):
     df = pd.read_csv('data/table_user.csv', sep=';')
@@ -36,13 +36,13 @@ def update_user(id, username, password, role):
         data = {'status': 'failed' ,'message': 'User tidak ditemukan'}
         return data
     
-    current_username = user['username'].values[0]
-    current_password = user['password'].values[0]
-    current_role = user['role'].values[0]
+    old_username = user['username'].values[0]
+    old_password = user['password'].values[0]
+    old_role = user['role'].values[0]
 
-    df.loc[df['id'] == id, 'username'] = username if username else current_username
-    df.loc[df['id'] == id, 'password'] = password if password else current_password
-    df.loc[df['id'] == id, 'role'] = role if role else current_role
+    df.loc[df['id'] == id, 'username'] = username if username else old_username
+    df.loc[df['id'] == id, 'password'] = password if password else old_password
+    df.loc[df['id'] == id, 'role'] = role if role else old_role
 
     with open('data/table_user.csv', mode='w', newline='', encoding='utf-8') as f:
         df.to_csv(f, index=False, sep=';')
@@ -53,10 +53,12 @@ def delete_user(id):
     df = pd.read_csv('data/table_user.csv', sep=';')
     user = df.loc[df['id'] == id]
     if user.empty:
-        return None
+        data = {'status': 'failed' ,'message': 'User tidak ditemukan'}
+        return data
     df = df.drop(user.index)
     with open('data/table_user.csv', mode='w', newline='', encoding='utf-8') as f:
         df.to_csv(f, index=False, sep=';')
-    return user
+    data = {'status': 'success' ,'message': 'User berhasil dihapus'}
+    return data
 
 
