@@ -2,7 +2,12 @@ import aiohttp #untuk mengakses API (pip install aiohttp)
 import asyncio #untuk menunggu proses asynchronous (pip install asyncio)
 import pandas as pd #untuk membaca file csv (pip install pandas)
 import os #untuk membersihkan console (pip install os)
+
 from datetime import datetime #untuk mendapatkan waktu
+
+from crud.user import create_user, read_user, update_user, delete_user
+from crud.pesanan import create_pesanan, read_pesanan, update_pesanan, delete_pesanan, konfirmasi_pesanan
+from crud.layanan import create_layanan, read_layanan, update_layanan, delete_layanan
 
 # Warna untuk mengganti warna teks di terminal
 BOLD = '\033[1m'
@@ -40,7 +45,11 @@ def register(username, password):
         data = {'message' : 'Username sudah terdaftar'}
         return data
 
-    user_id = len(df) + 1
+    if not df['id'].empty:
+        user_id = df['id'].max() + 1
+    else:
+
+        user_id = 1  # Jika tabel kosong, mulai dengan ID 1
     role = "user"
 
     new_data = pd.DataFrame({
@@ -52,8 +61,6 @@ def register(username, password):
 
     with open('data/table_user.csv', mode='a', newline='', encoding='utf-8') as f:
         new_data.to_csv(f, header=False, index=False, sep=';')
-
-
 
     data = {'id': user_id, 'role': role, 'message': 'Pendaftaran berhasil'}
     return data
@@ -122,11 +129,11 @@ async def pesan(user_id):
                     print(f"Layanan yang dipilih: {layanan_terpilih['layanan']}\n")
                     break
                 else:
-                    print(RED + BOLD +"Nomor yang dimasukkan di luar jangkauan pilihan. Silakan coba lagi." + RESET)
+                    handle_invalid_pilihan()
                 
             
             except ValueError:
-                print(RED + BOLD + "Input tidak valid. Masukkan nomor pilihan dengan benar."+RESET)
+                handle_invalid_pilihan()
 
         async with aiohttp.ClientSession() as session:
             # while True:
@@ -171,16 +178,21 @@ async def pesan(user_id):
                         # Meminta konfirmasi sebelum menyimpan pesanan
                         confirm = input(YELLOW + "Apakah data yang diinputkan sudah benar? (y/n): " + RESET)
                         if confirm.lower() == 'y':
+                            df_pesanan = pd.read_csv('data/table_pesanan.csv', sep=';')
+                            if not df_pesanan['id'].empty:
+                                id = df_pesanan['id'].max() + 1
+                            else:
+                                id = 1
                             # Membuat DataFrame untuk pesanan baru
                             pesanan_baru = pd.DataFrame([{
-                                'id': len(pd.read_csv('data/table_pesanan.csv', sep=';')) + 1,
+                                'id': id,
                                 'user_id': user_id,
                                 'lokasi_jemput': lokasi_jemput,
                                 'lokasi_tujuan': lokasi_tujuan,
                                 'jarak': jarak,
                                 'layanan': layanan_terpilih['layanan'],
                                 'total_harga': total_harga,
-                                'status': 'Pesanan Diterima',
+                                'status': 'diproses',
                                 'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             }])
 
@@ -198,10 +210,9 @@ async def pesan(user_id):
 
 
 def manu_admin(user_id):
-    os.system('cls')
-    print(GREEN + BOLD + "Selamat datang, admin!" + RESET)
-
     while True:
+        os.system('cls')
+        print(GREEN + BOLD + "Menu Admin" + RESET)
         print("masukkan pilihan :")
         print("1. konfirmasi pesanan")
         print("2. manage user")
@@ -211,9 +222,9 @@ def manu_admin(user_id):
         pilih = input(YELLOW + "masukkan pilihan :" + RESET)
 
         if pilih == "1":
-            pass
+            konfirmasi_pesanan()
         elif pilih == "2":
-            pass
+            menu_manage_user()
         elif pilih == "3":
             pass
         elif pilih == "4":
@@ -221,12 +232,12 @@ def manu_admin(user_id):
         elif pilih == "5":
             break
         else:
-            print("pilihan tidak valid")
+            handle_invalid_pilihan()
 
 def menu_user(user_id):
     while True:
         os.system('cls')
-        print(GREEN + BOLD + "Selamat datang, user!" + RESET)
+        print(GREEN + BOLD + "Menu User" + RESET)
         print("masukkan pilihan :")
         print("1. pesan")
         print("2. history pesanan")
@@ -240,21 +251,110 @@ def menu_user(user_id):
         elif pilih == "3":
             break
         else:
-            print("pilihan tidak valid")
+            handle_invalid_pilihan()
+
+def menu_manage_user():
+    while True:
+        os.system('cls')
+        print(GREEN + BOLD + "Manage User" +RESET)
+        print("pilihan :")
+        print("1. tambah user")
+        print("2. lihat user")
+        print("3. ubah user")
+        print("4. hapus user")
+        print("5. kembali")
+        pilih = input("masukkan pilihan :")
+
+        if pilih == "1":
+            while True:
+                username = input("Masukkan username: ").strip()
+                if username:
+                    break
+                print(RED + "Username tidak boleh kosong" + RESET)
+            while True:
+                password = input("Masukkan password: ").strip()
+                if password:
+                    break
+                print(RED + "Password tidak boleh kosong" + RESET)
+            while True:
+                role = input("Masukkan role (admin/user): ").strip().lower()
+                if role in ["admin", "user"]:
+                    break
+                print(RED + "Role tidak valid. Masukkan 'admin' atau 'user'." + RESET)
+
+            user = create_user(username, password, role)
+            if user['status'] == "success":
+                print(GREEN + user['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+            else:
+                print(RED + user['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+        elif pilih == "2":
+            read_user()
+            input("Tekan Enter untuk melanjutkan...")
+
+        elif pilih == "3":
+            read_user()
+    
+            # Meminta ID user yang ingin diubah
+            while True:
+                try:
+                    id = int(input("Masukkan ID user: ").strip())
+                    if id:
+                        break
+                    print(RED + "ID user tidak boleh kosong" + RESET)
+                except ValueError:
+                    print(RED + "ID user harus berupa angka" + RESET)
+
+            username = input("Masukkan username (kosongkan untuk mempertahankan nilai lama): ").strip()            
+            password = input("Masukkan password (kosongkan untuk mempertahankan nilai lama): ").strip()
+            
+            while True:
+                role = input("Masukkan role (admin/user) atau kosongkan untuk mempertahankan nilai lama: ").strip().lower()
+                if role in ["admin", "user", ""]:
+                    break
+                print(RED + "Role tidak valid. Masukkan 'admin' atau 'user', atau kosongkan untuk mempertahankan nilai lama." + RESET)
+
+            user = update_user(id, username, password, role)
+
+            if user['status'] == "success":
+                print(GREEN + user['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+            else:
+                print(RED + user['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+        elif pilih == "4":
+            break
+        elif pilih == "5":
+            break
+        else:
+            handle_invalid_pilihan()
+
+def menu_manage_pesanan(user_id):
+    pass
+
+def menu_manage_layanan(user_id):
+    pass
+
+def handle_invalid_pilihan():
+    print(RED + BOLD + "Pilihan tidak valid" + RESET)
+    input("Tekan Enter untuk melanjutkan...")
+
+
+
 
 # Fungsi utama
 def main():
-    # membersihkan console
     while True:
-
         # Try Except Untuk Mencegah Keyboard Interrupt
         try:
+            # membersihkan console
             os.system('cls')
-
-            print(CYAN+BOLD+ "Selamat datang di Sistem Pemesanan Transportasi dan Pengiriman" + RESET)
-            print("1. login")
-            print("2. register")
-            print("3. exit")
+            
+            print(CYAN + BOLD + "Selamat datang di Sistem Pemesanan Transportasi dan Pengiriman" + RESET)
+            print("1. Login")
+            print("2. Register")
+            print("3. Exit")
             pilih = input("Masukkan pilihan: ")
 
             if pilih == "1":
@@ -268,10 +368,12 @@ def main():
                 if user:
                     if user['role'] == "admin":
                         manu_admin(user['id'])
+                        os.system('cls')
                     elif user['role'] == "user":
                         menu_user(user['id'])
+                        os.system('cls')
                 else:
-                    print(RED+BOLD+"Username atau password tidak valid"+RESET)
+                    print(RED+BOLD+"Username atau password salah."+RESET)
                     input("Tekan Enter untuk melanjutkan...")
 
 
@@ -294,8 +396,7 @@ def main():
                 break
 
             else:
-                print(RED+BOLD+"Pilihan tidak valid"+RESET)
-                input("Tekan Enter untuk melanjutkan...")
+                handle_invalid_pilihan()
 
         except KeyboardInterrupt:
             pass
