@@ -6,28 +6,10 @@ import os #untuk membersihkan console (pip install os)
 from datetime import datetime #untuk mendapatkan waktu
 
 from crud.user import create_user, read_user, update_user, delete_user
-from crud.pesanan import create_pesanan, read_pesanan, update_pesanan, delete_pesanan, konfirmasi_pesanan
+from crud.pesanan import read_pesanan, update_pesanan, delete_pesanan, konfirmasi_pesanan, history
 from crud.layanan import create_layanan, read_layanan, update_layanan, delete_layanan
+from colors import *
 
-# Warna untuk mengganti warna teks di terminal
-BOLD = '\033[1m'
-BLACK = '\033[30m'
-RED = '\033[31m'
-GREEN = '\033[32m'
-YELLOW = '\033[33m' 
-BLUE = '\033[34m'
-MAGENTA = '\033[35m'
-CYAN = '\033[36m'
-LIGHT_GRAY = '\033[37m'
-DARK_GRAY = '\033[90m'
-BRIGHT_RED = '\033[91m'
-BRIGHT_GREEN = '\033[92m'
-BRIGHT_YELLOW = '\033[93m'
-BRIGHT_BLUE = '\033[94m'
-BRIGHT_MAGENTA = '\033[95m'
-BRIGHT_CYAN = '\033[96m'
-WHITE = '\033[97m'
-RESET = '\033[0m'
 
 # fungsi login
 def login(username, password):
@@ -41,7 +23,7 @@ def login(username, password):
 # fungsi register
 def register(username, password):
     df = pd.read_csv('data/table_user.csv', sep=';')
-    if df['username'].str.contains(username).any():
+    if username in df['username'].values:
         data = {'message' : 'Username sudah terdaftar'}
         return data
 
@@ -114,118 +96,131 @@ async def get_jarak(session, titik_jemput, titik_tujuan):
 # Fungsi Untuk Membuat Pesanan
 async def pesan(user_id):
     while True:
-        os.system('cls')
-        print(GREEN+"Pilih Layanan:"+RESET)
-        df = pd.read_csv('data/table_layanan.csv', sep=';')
+        try:
+            os.system('cls')
+            print(GREEN+"Pilih Layanan:"+RESET)
+            df = pd.read_csv('data/table_layanan.csv', sep=';')
 
-        for idx, layanan in enumerate(df['layanan'], start=1):
-            print(f"{idx}. {layanan}")
+            for idx, layanan in enumerate(df['layanan'], start=1):
+                print(f"{idx}. {layanan}")
 
-        while True:
-            try:
-                pilihan = int(input(YELLOW+"Masukkan nomor pilihan: "+RESET))
+            while True:
+                try:
+                    pilihan = int(input(YELLOW+"Masukkan nomor pilihan: "+RESET))
+                    
+                    # Memastikan nomor yang dipilih dalam rentang yang valid
+                    if 1 <= pilihan <= len(df):
+                        layanan_terpilih = df.iloc[pilihan - 1]
+                        print(f"Layanan yang dipilih: {layanan_terpilih['layanan']}\n")
+                        break
+                    else:
+                        handle_invalid_pilihan()
+                    
                 
-                # Memastikan nomor yang dipilih dalam rentang yang valid
-                if 1 <= pilihan <= len(df):
-                    layanan_terpilih = df.iloc[pilihan - 1]
-                    print(f"Layanan yang dipilih: {layanan_terpilih['layanan']}\n")
-                    break
-                else:
+                except ValueError:
                     handle_invalid_pilihan()
-                
-            
-            except ValueError:
-                handle_invalid_pilihan()
 
-        async with aiohttp.ClientSession() as session:
-                while True:
-                    lokasi_jemput = input(YELLOW + "Masukkan nama lokasi penjemputan: " + RESET)
-                    if not lokasi_jemput:
-                        print(RED + BOLD + "Lokasi tidak valid." + RESET)
-                        continue
-                    
-                    koordinat_jemput = await get_koordinat(session, lokasi_jemput)
-                    if koordinat_jemput:
-                        break
-                    else:
-                        print(RED + BOLD + "Lokasi penjemputan tidak ditemukan. Silakan coba lagi." + RESET)
-
-                while True:
-                    lokasi_tujuan = input(YELLOW + "Masukkan nama lokasi tujuan: " + RESET)
-                    if not lokasi_tujuan:
-                        print(RED + BOLD + "Lokasi tidak valid." + RESET)
-                        continue
-
-                    koordinat_tujuan = await get_koordinat(session, lokasi_tujuan)
-                    if koordinat_tujuan:
-                        break
-                    else:
-                        print(RED + BOLD + "Lokasi tujuan tidak ditemukan. Silakan coba lagi." + RESET)
-
-                # Jika koordinat ditemukan
-                if koordinat_jemput and koordinat_tujuan:
-                    jarak = await get_jarak(session, koordinat_jemput, koordinat_tujuan)
-                    
-                    if jarak:
-                        jarak = round(jarak)
-                        print(f"{MAGENTA}Jarak antara {lokasi_jemput} dan {lokasi_tujuan} adalah {jarak} km.{RESET}")
-                        total_harga = layanan_terpilih['harga'] * jarak
-
-                        print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
-                        
-
-                    else:
-                        print(RED + BOLD + "Gagal menghitung jarak.\n" + RESET)
-                        pilih = input(YELLOW + "Apakah ingin memasukkan jarak manual ? (y/n): " + RESET)
-                        if pilih.lower() == 'y':
-                            while True:
-                                try:
-                                    jarak = float(input(YELLOW + "Masukkan jarak (dalam satuan KM): " + RESET))
-                                    jarak = round(jarak)
-                                    break
-                                except ValueError:
-                                    print(RED + BOLD + "Jarak harus berupa angka." + RESET)
-
-                            total_harga = layanan_terpilih['harga'] * jarak
-                            
-                            print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
-
-                        elif pilih.lower() == 'n':
+            async with aiohttp.ClientSession() as session:
+                    while True:
+                        lokasi_jemput = input(YELLOW + "Masukkan nama lokasi penjemputan: " + RESET)
+                        if not lokasi_jemput:
+                            print(RED + BOLD + "Lokasi tidak valid." + RESET)
                             continue
+                        
+                        koordinat_jemput = await get_koordinat(session, lokasi_jemput)
+                        if koordinat_jemput:
+                            break
                         else:
-                            handle_invalid_pilihan()
+                            print(RED + BOLD + "Lokasi penjemputan tidak ditemukan. Silakan coba lagi." + RESET)
+
+                    while True:
+                        lokasi_tujuan = input(YELLOW + "Masukkan nama lokasi tujuan: " + RESET)
+                        if not lokasi_tujuan:
+                            print(RED + BOLD + "Lokasi tidak valid." + RESET)
+                            continue
+
+                        koordinat_tujuan = await get_koordinat(session, lokasi_tujuan)
+                        if koordinat_tujuan:
+                            break
+                        else:
+                            print(RED + BOLD + "Lokasi tujuan tidak ditemukan. Silakan coba lagi." + RESET)
+
+                    # Jika koordinat ditemukan
+                    if koordinat_jemput and koordinat_tujuan:
+                        jarak = await get_jarak(session, koordinat_jemput, koordinat_tujuan)
+                        
+                        if jarak:
+                            jarak = round(jarak)
+                            print(f"{MAGENTA}Jarak antara {lokasi_jemput} dan {lokasi_tujuan} adalah {jarak} km.{RESET}")
+                            total_harga = layanan_terpilih['harga'] * jarak
+
+                            print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
                             
-                else:
-                        print("Lokasi tidak ditemukan.")
 
-                if jarak and total_harga:
-                    # Meminta konfirmasi sebelum menyimpan pesanan
-                    confirm = input(YELLOW + "Apakah data yang diinputkan sudah benar? (y/n): " + RESET)
-                    if confirm.lower() == 'y':
-                        df_pesanan = pd.read_csv('data/table_pesanan.csv', sep=';')
-                        if not df_pesanan['id'].empty:
-                            id = df_pesanan['id'].max() + 1
                         else:
-                            id = 1
-                        # Membuat DataFrame untuk pesanan baru
-                        pesanan_baru = pd.DataFrame([{
-                            'id': id,
-                            'user_id': user_id,
-                            'lokasi_jemput': lokasi_jemput,
-                            'lokasi_tujuan': lokasi_tujuan,
-                            'jarak': jarak,
-                            'layanan': layanan_terpilih['layanan'],
-                            'total_harga': total_harga,
-                            'status': 'diproses',
-                            'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        }])
+                            print(RED + BOLD + "Gagal menghitung jarak.\n" + RESET)
+                            pilih = input(YELLOW + "Apakah ingin memasukkan jarak manual ? (y/n): " + RESET)
+                            if pilih.lower() == 'y':
+                                while True:
+                                    try:
+                                        jarak = float(input(YELLOW + "Masukkan jarak (dalam satuan KM): " + RESET))
+                                        jarak = round(jarak)
+                                        break
+                                    except ValueError:
+                                        print(RED + BOLD + "Jarak harus berupa angka." + RESET)
 
-                        with open('data/table_pesanan.csv', mode='a', newline='', encoding='utf-8') as f:
-                            pesanan_baru.to_csv(f, header=False, index=False, sep=';')
+                                total_harga = layanan_terpilih['harga'] * jarak
+                                
+                                print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
 
-                        print(GREEN+BOLD+"Pesanan telah disimpan.Silahkan menunggu pemrosesan pesanan."+RESET)
-                        input("Tekan Enter untuk melanjutkan...")
-                    break
+                            elif pilih.lower() == 'n':
+                                continue
+                            else:
+                                handle_invalid_pilihan()
+                                
+                    else:
+                            print("Lokasi tidak ditemukan.")
+
+                    if jarak and total_harga:
+                        # Meminta konfirmasi sebelum menyimpan pesanan
+                        while True:
+                            confirm = input(YELLOW + "Apakah data yang diinputkan sudah benar? (y/n): " + RESET)
+                            if confirm != 'y' and confirm != 'n':
+                                handle_invalid_pilihan()
+                                continue
+                            else:
+                                break
+                            
+                        if confirm.lower() == 'y':
+                            df_pesanan = pd.read_csv('data/table_pesanan.csv', sep=';')
+                            if not df_pesanan['id'].empty:
+                                id = df_pesanan['id'].max() + 1
+                            else:
+                                id = 1
+                            # Membuat DataFrame untuk pesanan baru
+                            pesanan_baru = pd.DataFrame([{
+                                'id': id,
+                                'user_id': user_id,
+                                'lokasi_jemput': lokasi_jemput,
+                                'lokasi_tujuan': lokasi_tujuan,
+                                'jarak': jarak,
+                                'layanan': layanan_terpilih['layanan'],
+                                'total_harga': total_harga,
+                                'status': 'diproses',
+                                'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            }])
+
+                            with open('data/table_pesanan.csv', mode='a', newline='', encoding='utf-8') as f:
+                                pesanan_baru.to_csv(f, header=False, index=False, sep=';')
+
+                            print(GREEN+BOLD+"Pesanan telah disimpan.Silahkan menunggu pemrosesan pesanan."+RESET)
+                            input("Tekan Enter untuk melanjutkan...")
+
+                        elif confirm.lower() == 'n':
+                            continue  
+                        break
+        except KeyboardInterrupt:
+            pass
 
 
 def manu_admin(user_id):
@@ -255,22 +250,26 @@ def manu_admin(user_id):
 
 def menu_user(user_id):
     while True:
-        os.system('cls')
-        print(GREEN + BOLD + "Menu User" + RESET)
-        print("masukkan pilihan :")
-        print("1. pesan")
-        print("2. history pesanan")
-        print("3. logout")
-        pilih = input(YELLOW + "masukkan pilihan :"+ RESET)
+        try:
+            os.system('cls')
+            print(GREEN + BOLD + "Menu User" + RESET)
+            print("masukkan pilihan :")
+            print("1. pesan")
+            print("2. history pesanan")
+            print("3. logout")
+            pilih = input(YELLOW + "masukkan pilihan :"+ RESET)
 
-        if pilih == "1":
-            asyncio.run(pesan(user_id))
-        elif pilih == "2":
+            if pilih == "1":
+                asyncio.run(pesan(user_id))
+            elif pilih == "2":
+                history(user_id)
+                input("Tekan Enter untuk melanjutkan...")
+            elif pilih == "3":
+                break
+            else:
+                handle_invalid_pilihan()
+        except KeyboardInterrupt:
             pass
-        elif pilih == "3":
-            break
-        else:
-            handle_invalid_pilihan()
 
 def menu_manage_user(user_id):
     while True:
@@ -282,7 +281,7 @@ def menu_manage_user(user_id):
         print("3. ubah user")
         print("4. hapus user")
         print("5. kembali")
-        pilih = input("masukkan pilihan :")
+        pilih = input(YELLOW+ "masukkan pilihan :" + RESET)
 
         if pilih == "1":
             while True:
@@ -384,7 +383,7 @@ def menu_manage_layanan():
         print("3. ubah layanan")
         print("4. hapus layanan")
         print("5. kembali")
-        pilih = input("masukkan pilihan :")
+        pilih = input(YELLOW+ "masukkan pilihan :" + RESET)
 
         if pilih == "1":
             while True:
@@ -464,7 +463,51 @@ def menu_manage_layanan():
             break
 
 def menu_manage_pesanan(user_id):
-    pass
+    while True:
+        os.system('cls')
+        print(GREEN + BOLD + "Manage pesanan" +RESET)
+        print("pilihan :")
+        print("1. tambah pesanan")
+        print("2. lihat pesanan")
+        print("3. ubah pesanan")
+        print("4. hapus pesanan")
+        print("5. kembali")
+        pilih = input(YELLOW+ "masukkan pilihan :" + RESET)
+
+        if pilih == "1":
+            asyncio.run(pesan(user_id))
+
+        elif pilih == "2":
+            read_pesanan()
+            input("Tekan Enter untuk melanjutkan...")
+
+        elif pilih == "3":
+            pass
+
+        elif pilih == "4":
+            read_pesanan()
+
+            while True:
+                try:
+                    id = int(input("Masukkan ID pesanan: ").strip())
+                    break
+                except ValueError:
+                    print(RED + "ID pesanan harus berupa angka" + RESET)
+
+            pesanan = delete_pesanan(id)
+
+            if pesanan['status'] == "success":
+                print(GREEN + pesanan['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+            else:
+                print(RED + pesanan['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+
+        elif pilih == "5":
+            break
+
+        else:
+            handle_invalid_pilihan()
 
 def handle_invalid_pilihan():
     print(RED + BOLD + "Pilihan tidak valid" + RESET)

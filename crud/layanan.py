@@ -25,9 +25,12 @@ def create_layanan(layanan, harga):
     return data
 
 def read_layanan():
-    df = pd.read_csv('data/table_layanan.csv', sep=';')
-    print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex=False))
-
+    try:
+        df = pd.read_csv('data/table_layanan.csv', sep=';')
+        print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex=False))
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+        
 def update_layanan(id, layanan_baru, harga):
     df = pd.read_csv('data/table_layanan.csv', sep=';')
     if layanan_baru in df['layanan'].values:
