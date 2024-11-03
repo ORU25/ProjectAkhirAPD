@@ -1,17 +1,17 @@
-#DAFTAR LIBARRY YANG HARUS DIINSTALL
+# DAFTAR LIBARRY YANG HARUS DIINSTALL
 
-##pandas
+## pandas
 
 `pip install pandas`
 
-##aiohttp
+## aiohttp
 
 `pip install aiohttp`
 
-##asyncio
+## asyncio
 
 `pip install asyncio`
 
-##tabulate
+## tabulate
 
 `pip install tabulate`
