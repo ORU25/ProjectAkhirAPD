@@ -1,7 +1,7 @@
 import pandas as pd #untuk membaca file csv (pip install pandas)
 from tabulate import tabulate #untuk membuat tabel (pip install tabulate)
 
-def create_layanan(layanan, harga):
+def create_layanan(layanan, harga, jenis):
     df = pd.read_csv('data/table_layanan.csv', sep=';')
     if not df['id'].empty:
         layanan_id = df['id'].max() + 1
@@ -17,7 +17,8 @@ def create_layanan(layanan, harga):
     new_data = pd.DataFrame({
         'id': [layanan_id],
         'layanan': [layanan],
-        'harga': [harga]
+        'harga': [harga],
+        'jenis': [jenis]
     })
     with open('data/table_layanan.csv', mode='a', newline='', encoding='utf-8') as f:
         new_data.to_csv(f, header=False, index=False, sep=';')
@@ -31,7 +32,7 @@ def read_layanan():
     except Exception as e:
         print(f"Terjadi kesalahan: {e}")
         
-def update_layanan(id, layanan_baru, harga):
+def update_layanan(id, layanan_baru, harga, jenis):
     df = pd.read_csv('data/table_layanan.csv', sep=';')
     if layanan_baru in df['layanan'].values:
         data = {'status': 'failed','message' : 'Layanan sudah terdaftar'}
@@ -48,9 +49,11 @@ def update_layanan(id, layanan_baru, harga):
     
     old_layanan = layanan['layanan'].values[0]
     old_harga = layanan['harga'].values[0]
+    old_jenis = layanan['jenis'].values[0]
 
     df.loc[df['id'] == id, 'layanan'] = layanan_baru if layanan_baru else old_layanan
     df.loc[df['id'] == id, 'harga'] = harga if harga != 0 else old_harga
+    df.loc[df['id'] == id, 'jenis'] = jenis if jenis else old_jenis
 
     with open('data/table_layanan.csv', mode='w', newline='', encoding='utf-8') as f:
         df.to_csv(f, index=False, sep=';')

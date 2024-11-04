@@ -5,10 +5,12 @@ import os #untuk membersihkan console (pip install os)
 
 from datetime import datetime #untuk mendapatkan waktu
 
-from crud.user import create_user, read_user, update_user, delete_user
-from crud.pesanan import read_pesanan, update_pesanan, delete_pesanan, konfirmasi_pesanan, history
-from crud.layanan import create_layanan, read_layanan, update_layanan, delete_layanan
+from crud.user import *
+from crud.pesanan import *
+from crud.layanan import *
 from colors import *
+from geolocation import get_jarak, get_koordinat
+from invalid_pilihan import *
 
 
 # fungsi login
@@ -47,52 +49,6 @@ def register(username, password):
     data = {'id': user_id, 'role': role, 'message': 'Pendaftaran berhasil'}
     return data
 
-# Fungsi untuk mendapatkan koordinat dari nama lokasi menggunakan Nominatim
-async def get_koordinat(session, location):
-    url = f"https://nominatim.openstreetmap.org/search?q={location}&format=json&limit=1&countrycodes=ID"
-
-    try:
-        async with session.get(url) as response:
-
-            if response.status == 200:
-                data = await response.json()
-
-                if data:
-                    print(f'{location} ditemukan.')
-                    print(f'{data[0]["display_name"]}\n')
-                    lat = float(data[0]['lat'])
-                    lon = float(data[0]['lon'])
-                    return lat, lon
-                else:
-                    print("Lokasi tidak ditemukan.")
-                    return None            
-            else:
-                print("Gagal mengakses API Nominatim.")
-                return None
-
-    except Exception as e:
-        print(f"Terjadi kesalahan: {e}")
-        return None
-
-# Fungsi untuk menghitung jarak antara dua titik menggunakan OSRM
-async def get_jarak(session, titik_jemput, titik_tujuan):
-    url = f"http://router.project-osrm.org/route/v1/driving/{titik_jemput[1]},{titik_jemput[0]};{titik_tujuan[1]},{titik_tujuan[0]}?overview=false"
-
-    try:
-        async with session.get(url) as response:
-
-            if response.status == 200:
-                data = await response.json()
-                jarak = data['routes'][0]['distance'] / 1000
-                return jarak
-            
-            else:
-                print(RED + BOLD +"Gagal mengakses API OSRM."+ RESET)
-                return None
-
-    except Exception as e:
-        print(f"Terjadi kesalahan: {e}")
-
 # Fungsi Untuk Membuat Pesanan
 async def pesan(user_id):
     while True:
@@ -104,6 +60,7 @@ async def pesan(user_id):
             for idx, layanan in enumerate(df['layanan'], start=1):
                 print(f"{idx}. {layanan}")
 
+            # memilih layanan
             while True:
                 try:
                     pilihan = int(input(YELLOW+"Masukkan nomor pilihan: "+RESET))
@@ -121,6 +78,22 @@ async def pesan(user_id):
                     handle_invalid_pilihan()
 
             async with aiohttp.ClientSession() as session:
+                    berat = None
+
+                    # input berat jika jenis layanan pengiriman
+                    if layanan_terpilih['jenis'] == 'pengiriman':
+                        while True:
+                            try:
+                                berat = int(input(YELLOW + "Masukkan berat barang (kg): " + RESET))
+                                if berat > 0:
+                                    print(f"{MAGENTA}Berat barang: {berat} kg{RESET}\n")
+                                    break
+                                else:
+                                    print(RED + BOLD + "Berat bnarang tidak boleh negatif" + RESET)
+                            except ValueError:
+                                print(RED + BOLD + "Berat barang harus berupa angka." + RESET)
+                    
+                    # menentukan lokasi penjemputan
                     while True:
                         lokasi_jemput = input(YELLOW + "Masukkan nama lokasi penjemputan: " + RESET)
                         if not lokasi_jemput:
@@ -133,6 +106,7 @@ async def pesan(user_id):
                         else:
                             print(RED + BOLD + "Lokasi penjemputan tidak ditemukan. Silakan coba lagi." + RESET)
 
+                    # menentukan lokasi tujuan
                     while True:
                         lokasi_tujuan = input(YELLOW + "Masukkan nama lokasi tujuan: " + RESET)
                         if not lokasi_tujuan:
@@ -145,18 +119,16 @@ async def pesan(user_id):
                         else:
                             print(RED + BOLD + "Lokasi tujuan tidak ditemukan. Silakan coba lagi." + RESET)
 
-                    # Jika koordinat ditemukan
+                    # menentukan jarak dan menghitung total harga jika koordinat ditemukan
                     if koordinat_jemput and koordinat_tujuan:
                         jarak = await get_jarak(session, koordinat_jemput, koordinat_tujuan)
                         
+                        # perhitungan total harga jika berat barang ada
                         if jarak:
                             jarak = round(jarak)
                             print(f"{MAGENTA}Jarak antara {lokasi_jemput} dan {lokasi_tujuan} adalah {jarak} km.{RESET}")
-                            total_harga = layanan_terpilih['harga'] * jarak
-
-                            print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
                             
-
+                        # input jarak manual jika jarak tidak ditemukan oleh sistem
                         else:
                             print(RED + BOLD + "Gagal menghitung jarak.\n" + RESET)
                             pilih = input(YELLOW + "Apakah ingin memasukkan jarak manual ? (y/n): " + RESET)
@@ -168,21 +140,28 @@ async def pesan(user_id):
                                         break
                                     except ValueError:
                                         print(RED + BOLD + "Jarak harus berupa angka." + RESET)
-
-                                total_harga = layanan_terpilih['harga'] * jarak
                                 
-                                print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
-
                             elif pilih.lower() == 'n':
                                 continue
                             else:
                                 handle_invalid_pilihan()
-                                
-                    else:
-                            print("Lokasi tidak ditemukan.")
 
+                        # menghitung total harga    
+                        if berat:
+                            total_harga = layanan_terpilih['harga'] * jarak * berat
+                        else:
+                            total_harga = layanan_terpilih['harga'] * jarak 
+
+                        if berat:
+                            print(f"{MAGENTA}Berat Barang: {berat} kg.{RESET}")
+
+                        print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
+
+                    else:
+                        print("Lokasi tidak ditemukan.")
+                    
+                    # membuat pesanan jika jarak dan total_harga diketahui
                     if jarak and total_harga:
-                        # Meminta konfirmasi sebelum menyimpan pesanan
                         while True:
                             confirm = input(YELLOW + "Apakah data yang diinputkan sudah benar? (y/n): " + RESET)
                             if confirm != 'y' and confirm != 'n':
@@ -205,6 +184,7 @@ async def pesan(user_id):
                                 'lokasi_tujuan': lokasi_tujuan,
                                 'jarak': jarak,
                                 'layanan': layanan_terpilih['layanan'],
+                                'beratBarang': berat,
                                 'total_harga': total_harga,
                                 'status': 'diproses',
                                 'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -219,9 +199,9 @@ async def pesan(user_id):
                         elif confirm.lower() == 'n':
                             continue  
                         break
+        
         except KeyboardInterrupt:
             pass
-
 
 def manu_admin(user_id):
     while True:
@@ -400,7 +380,13 @@ def menu_manage_layanan():
                 except ValueError:
                     print(RED + "harga harus berupa angka" + RESET)
 
-            layanan_baru = create_layanan(layanan,harga)
+            while True:
+                jenis = input("Masukkan jenis (pengiriman/transportasi): ").strip().lower()
+                if jenis in ["pengiriman", "transportasi"]:
+                    break
+                print(RED + "jenis tidak valid. Masukkan 'pengiriman' atau 'transportasi'." + RESET)
+
+            layanan_baru = create_layanan(layanan,harga,jenis)
             if layanan_baru['status'] == "success":
                 print(GREEN + layanan_baru['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
@@ -422,16 +408,29 @@ def menu_manage_layanan():
                     break
                 except ValueError:
                     print(RED + "ID layanan harus berupa angka" + RESET)
+                    
+            while True:
+                layanan = input("Masukkan layanan (kosongkan untuk mempertahankan nilai lama): ").strip()
+                if layanan.isnumeric():
+                    print(RED + "layanan tidak boleh berupa angka" + RESET)
+                    continue
+                else:
+                    break
 
-            layanan = input("Masukkan layanan (kosongkan untuk mempertahankan nilai lama): ").strip()            
             while True:
                 try:
                     harga = int(input("Masukkan harga (masukkan 0 untuk menggunakan harga lama): ").strip())
                     break
                 except ValueError:
                     print(RED + "harga harus berupa angka" + RESET)
+            
+            while True:
+                jenis = input("Masukkan jenis (pengiriman/transportasi) (kosongkan untuk mempertahankan nilai lama): ").strip().lower()
+                if jenis in ["pengiriman", "transportasi",""]:
+                    break
+                print(RED + "jenis tidak valid. Masukkan 'pengiriman' atau 'transportasi', atau kosongkan untuk mempertahankan nilai lama." + RESET)
 
-            layanan = update_layanan(id, layanan, harga)
+            layanan = update_layanan(id, layanan, harga, jenis)
 
             if layanan['status'] == "success":
                 print(GREEN + layanan['message'] + RESET)
@@ -482,7 +481,23 @@ def menu_manage_pesanan(user_id):
             input("Tekan Enter untuk melanjutkan...")
 
         elif pilih == "3":
-            pass
+            read_pesanan()
+
+            while True:
+                try:
+                    id = int(input("Masukkan ID pesanan: ").strip())
+                    break
+                except ValueError:
+                    print(RED + "ID pesanan harus berupa angka" + RESET)
+
+            pesanan = asyncio.run(update_pesanan(id))
+
+            if pesanan['status'] == "success":
+                print(GREEN + pesanan['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
+            else:
+                print(RED + pesanan['message'] + RESET)
+                input("Tekan Enter untuk melanjutkan...")
 
         elif pilih == "4":
             read_pesanan()
@@ -509,9 +524,6 @@ def menu_manage_pesanan(user_id):
         else:
             handle_invalid_pilihan()
 
-def handle_invalid_pilihan():
-    print(RED + BOLD + "Pilihan tidak valid" + RESET)
-    input("Tekan Enter untuk melanjutkan...")
 
 # Fungsi utama
 def main():

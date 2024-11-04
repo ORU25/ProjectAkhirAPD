@@ -60,5 +60,3 @@ def delete_user(id):
         df.to_csv(f, index=False, sep=';')
     data = {'status': 'success' ,'message': 'User berhasil dihapus'}
     return data
-
-

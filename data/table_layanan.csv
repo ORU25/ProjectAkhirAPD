@@ -1,3 +1,4 @@
-id;layanan;harga
-1;motor;5000
-2;mobil;20000
+id;layanan;harga;jenis
+1;motor;5000;transportasi
+2;mobil;20000;transportasi
+3;kurir;3000;pengiriman

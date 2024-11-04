@@ -1,9 +1,5 @@
-id;user_id;lokasi_jemput;lokasi_tujuan;jarak;layanan ;total_harga;status;tanggal_pesanan
-1;2;big mall samarinda;hotel harris samarinda;2;motor;10000;dikonfirmasi;2024-10-30 15:15:04
-2;3;samarinda;bontang;119;motor;595000;dikonfirmasi;2024-10-30 15:25:09
-3;2;indomaret pramuka;jalan juanda samarinda;5;motor;25000;diproses;2024-10-30 19:53:40
-4;2;samarinda;big mall samarinda;5;mobil;75000;diproses;2024-10-31 08:04:47
-5;2;tenggarong;big mall samarinda;33;mobil;495000;diproses;2024-10-31 08:21:13
-6;2;samarinda;bontang;119;mobil;1785000;diproses;2024-10-31 08:24:24
-7;2;universitas mulawarman;big mall samarinda;11;motor;55000;diproses;2024-11-02 13:47:07
-8;2;universitas mulawarman;jalan gelatik 1 samarinda;2;mobil;40000;ditolak;2024-11-02 18:59:47
+id;user_id;lokasi_jemput;lokasi_tujuan;jarak;layanan;beratBarang;total_harga;status;tanggal_pesanan
+2;2;samarinda;bontang;119.0;motor;;595000.0;diproses;2024-11-04 18:06:18
+3;1;samarinda seberang;kantor gubernur samarinda;6.0;kurir;8.0;144000.0;dikonfirmasi;2024-11-04 18:17:23
+4;2;samarinda seberang;samarinda kota;8.0;kurir;8.0;192000.0;diproses;2024-11-04 19:58:42
+5;2;bontang utara;bontang kuala;5.0;kurir;8.0;120000.0;diproses;2024-11-04 22:10:58
