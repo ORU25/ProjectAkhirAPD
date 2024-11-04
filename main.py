@@ -203,6 +203,7 @@ async def pesan(user_id):
         except KeyboardInterrupt:
             pass
 
+# menampilkan menu admin
 def manu_admin(user_id):
     while True:
         os.system('cls')
@@ -228,6 +229,7 @@ def manu_admin(user_id):
         else:
             handle_invalid_pilihan()
 
+# menampilkan menu user
 def menu_user(user_id):
     while True:
         try:
@@ -251,6 +253,8 @@ def menu_user(user_id):
         except KeyboardInterrupt:
             pass
 
+
+# menampilkan menu manage user
 def menu_manage_user(user_id):
     while True:
         os.system('cls')
@@ -353,6 +357,7 @@ def menu_manage_user(user_id):
         else:
             handle_invalid_pilihan()
 
+# menampilkan menu manage layanan
 def menu_manage_layanan():
     while True:
         os.system('cls')
@@ -461,6 +466,7 @@ def menu_manage_layanan():
         elif pilih == "5":
             break
 
+# menampilkan menu Manage Pesanan
 def menu_manage_pesanan(user_id):
     while True:
         os.system('cls')
@@ -523,7 +529,6 @@ def menu_manage_pesanan(user_id):
 
         else:
             handle_invalid_pilihan()
-
 
 # Fungsi utama
 def main():

@@ -1,5 +1,5 @@
 id;user_id;lokasi_jemput;lokasi_tujuan;jarak;layanan;beratBarang;total_harga;status;tanggal_pesanan
-2;2;samarinda;bontang;119.0;motor;;595000.0;diproses;2024-11-04 18:06:18
-3;1;samarinda seberang;kantor gubernur samarinda;6.0;kurir;8.0;144000.0;dikonfirmasi;2024-11-04 18:17:23
-4;2;samarinda seberang;samarinda kota;8.0;kurir;8.0;192000.0;diproses;2024-11-04 19:58:42
-5;2;bontang utara;bontang kuala;5.0;kurir;8.0;120000.0;diproses;2024-11-04 22:10:58
+1;1;kantor gubernur samarinda;big mall samarinda;5;kurir;2.0;30000;diproses;2024-11-05 06:26:47
+2;1;jalan juanda samarinda;jalan pramuka samarinda;5;kurir;5.0;75000;diproses;2024-11-05 06:27:15
+3;2;samarinda central plaza;mall lembuswana samarinda;8;mobil;;160000;diproses;2024-11-05 06:28:08
+4;2;universitas mulawarman;umkt;4;kurir;2.0;24000;diproses;2024-11-05 06:28:35

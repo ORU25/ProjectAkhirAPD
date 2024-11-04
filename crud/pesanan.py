@@ -76,6 +76,8 @@ async def update_pesanan(id):
         # Ubah lokasi ? kalau diubah berarti ngaruh ke jarak dan total harga
         while True:
             pilih_lokasi = input(YELLOW+"ubah lokasi ? (y/n): "+RESET)
+
+            # jika ubah lokasi
             if pilih_lokasi.lower() == 'y':
                 async with aiohttp.ClientSession() as session:
 
@@ -134,7 +136,8 @@ async def update_pesanan(id):
                     # menghitung total harga  
                     
                     break
-
+            
+            # jika tidak ubah lokasi
             elif pilih_lokasi.lower() == 'n':
                 lokasi_jemput = pesanan['lokasi_jemput'].values[0]
                 lokasi_tujuan = pesanan['lokasi_tujuan'].values[0]
@@ -142,11 +145,13 @@ async def update_pesanan(id):
                 break
             else:
                 handle_invalid_pilihan()
-            
+        
+        # menghitung total harga ketika layanan atau jarak diubah
         if pd.notna(berat) and berat > 0:
-            total_harga = layanan['harga'].values[0] * jarak * berat
+            total_harga = layanan['harga'] * jarak * berat
         else:
-            total_harga = layanan['harga'].values[0] * jarak 
+
+            total_harga = layanan['harga'] * jarak 
 
         if berat:
             print(f"{MAGENTA}Berat Barang: {berat} kg.{RESET}")
@@ -168,6 +173,7 @@ async def update_pesanan(id):
                 status = pesanan['status'].values[0]
                 break
         
+        # menyimpan perubahan
         df.loc[df['id'] == id, 'lokasi_jemput'] = lokasi_jemput
         df.loc[df['id'] == id, 'lokasi_tujuan'] = lokasi_tujuan
         df.loc[df['id'] == id, 'jarak'] = jarak
@@ -175,12 +181,12 @@ async def update_pesanan(id):
         df.loc[df['id'] == id, 'beratBarang'] = berat
         df.loc[df['id'] == id, 'total_harga'] = total_harga
         df.loc[df['id'] == id, 'status'] = status
-        
 
         df.to_csv('data/table_pesanan.csv', sep=';', index=False)
 
         data = {'status': 'success' ,'message': 'Layanan berhasil diperbarui'}
         return data
+    
     except Exception as e:
         data = {'status': 'failed','message' : f'Terjadi kesalahan: {e}'}
         return data
