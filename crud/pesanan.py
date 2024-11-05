@@ -32,25 +32,26 @@ async def update_pesanan(id):
         while True:
             df_layanan = pd.read_csv('data/table_layanan.csv', sep=';')
             layanan_lama = df_layanan.loc[df_layanan['layanan'] == pesanan['layanan'].values[0]]
-        
+            
             pilih_layanan = input(YELLOW+"ubah layanan ? (y/n): "+RESET)
             if pilih_layanan.lower() == 'y':
 
                 for index, row in df_layanan.iterrows():
                     print(f"{index+1}. {row['layanan']}")
-
                 try:
                     pilihan = int(input(YELLOW+"Masukkan nomor pilihan: "+RESET))
                 except ValueError:
                     handle_invalid_pilihan()
 
                 if 1 <= pilihan <= len(df_layanan):
-                    layanan = df_layanan.iloc[pilihan - 1]
-                    print(f"Layanan yang dipilih: {layanan['layanan']}\n")
 
-                    if layanan_lama['jenis'].iloc[0] == 'pengiriman' and layanan['jenis'] == 'transportasi':
+                    layanan = df_layanan[df_layanan.index == (pilihan - 1)].iloc[0] 
+    
+                    print(f"Layanan yang dipilih: {layanan['layanan']}\n")
+                    
+                    if layanan_lama['jenis'].values[0] == 'pengiriman' and layanan['jenis'] == 'transportasi':
                         berat = None
-                    elif layanan_lama['jenis'].iloc[0] == 'transportasi' and layanan['jenis'] == 'pengiriman':
+                    elif layanan_lama['jenis'].values[0] == 'transportasi' and layanan['jenis'] == 'pengiriman':
                         while True:
                             try:
                                 berat = int(input(YELLOW + "Masukkan berat barang (kg): " + RESET))
@@ -150,10 +151,9 @@ async def update_pesanan(id):
         if pd.notna(berat) and berat > 0:
             total_harga = layanan['harga'] * jarak * berat
         else:
-
             total_harga = layanan['harga'] * jarak 
 
-        if berat:
+        if pd.notna(berat) and berat > 0:
             print(f"{MAGENTA}Berat Barang: {berat} kg.{RESET}")
 
         print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
