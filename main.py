@@ -66,196 +66,197 @@ def register(username, password):
 # Fungsi Untuk Membuat Pesanan
 async def pesan(user_id):
     while True:
-        try:
-            os.system('cls')
-            print(GREEN+"Pilih Layanan:"+RESET)
+        os.system('cls')
+        print(GREEN+"Pilih Layanan:"+RESET)
 
-            # menampilkan layanan yang tersedia
-            df = pd.read_csv('data/table_layanan.csv', sep=';')
-            for idx, layanan in enumerate(df['layanan'], start=1):
-                print(f"{idx}. {layanan}")
+        # menampilkan layanan yang tersedia
+        df = pd.read_csv('data/table_layanan.csv', sep=';')
+        for idx, layanan in enumerate(df['layanan'], start=1):
+            print(f"{idx}. {layanan}")
 
-            # memilih layanan
-            while True:
-                try:
-                    pilihan = int(input(YELLOW+"Masukkan nomor pilihan: "+RESET))
-                    
-                    # Memastikan nomor yang dipilih dalam rentang yang valid
-                    if 1 <= pilihan <= len(df):
-                        layanan_terpilih = df.iloc[pilihan - 1]
-                        print(f"Layanan yang dipilih: {layanan_terpilih['layanan']}\n")
-                        break
-                    else:
-                        handle_invalid_pilihan()
-                except ValueError:
+        # memilih layanan
+        while True:
+            try:
+                pilihan = int(input(YELLOW+"Masukkan nomor pilihan: "+RESET))
+                
+                # Memastikan nomor yang dipilih dalam rentang yang valid
+                if 1 <= pilihan <= len(df):
+                    layanan_terpilih = df.iloc[pilihan - 1]
+                    print(f"Layanan yang dipilih: {layanan_terpilih['layanan']}\n")
+                    break
+                else:
                     handle_invalid_pilihan()
-            
-            
-            async with aiohttp.ClientSession() as session:
-                    berat = None
+            except ValueError:
+                handle_invalid_pilihan()
+        
+        
+        async with aiohttp.ClientSession() as session:
+            berat = None
 
-                    # input berat jika jenis layanan pengiriman
-                    if layanan_terpilih['jenis'] == 'pengiriman':
+            # input berat jika jenis layanan pengiriman
+            if layanan_terpilih['jenis'] == 'pengiriman':
+                while True:
+                    try:
+                        berat = int(input(YELLOW + "Masukkan berat barang (kg): " + RESET))
+                        if berat > 0:
+                            print(f"{MAGENTA}Berat barang: {berat} kg{RESET}\n")
+                            break
+                        else:
+                            print(RED + BOLD + "Berat bnarang tidak boleh negatif" + RESET)
+                    except ValueError:
+                        print(RED + BOLD + "Berat barang harus berupa angka." + RESET)
+            
+            # menentukan lokasi penjemputan
+            while True:
+                lokasi_jemput = input(YELLOW + "Masukkan nama lokasi penjemputan: " + RESET)
+                if not lokasi_jemput:
+                    print(RED + BOLD + "Lokasi tidak valid." + RESET)
+                    continue
+                
+                koordinat_jemput = await get_koordinat(session, lokasi_jemput)
+                if koordinat_jemput:
+                    break
+                else:
+                    print(RED + BOLD + "Lokasi penjemputan tidak ditemukan. Silakan coba lagi." + RESET)
+
+            # menentukan lokasi tujuan
+            while True:
+                lokasi_tujuan = input(YELLOW + "Masukkan nama lokasi tujuan: " + RESET)
+                if not lokasi_tujuan:
+                    print(RED + BOLD + "Lokasi tidak valid." + RESET)
+                    continue
+
+                koordinat_tujuan = await get_koordinat(session, lokasi_tujuan)
+                if koordinat_tujuan:
+                    break
+                else:
+                    print(RED + BOLD + "Lokasi tujuan tidak ditemukan. Silakan coba lagi." + RESET)
+
+            # menentukan jarak dan menghitung total harga jika koordinat ditemukan
+            if koordinat_jemput and koordinat_tujuan:
+                jarak = await get_jarak(session, koordinat_jemput, koordinat_tujuan)
+                
+                # perhitungan total harga jika berat barang ada
+                if jarak:
+                    jarak = round(jarak)
+                    print(f"{MAGENTA}Jarak antara {lokasi_jemput} dan {lokasi_tujuan} adalah {jarak} km.{RESET}")
+                    
+                # input jarak manual jika jarak tidak ditemukan oleh sistem
+                else:
+                    print(RED + BOLD + "Gagal menghitung jarak.\n" + RESET)
+                    pilih = input(YELLOW + "Apakah ingin memasukkan jarak manual ? (y/n): " + RESET)
+                    # jika memilih input jarak manual
+                    if pilih.lower() == 'y':
                         while True:
                             try:
-                                berat = int(input(YELLOW + "Masukkan berat barang (kg): " + RESET))
-                                if berat > 0:
-                                    print(f"{MAGENTA}Berat barang: {berat} kg{RESET}\n")
-                                    break
-                                else:
-                                    print(RED + BOLD + "Berat bnarang tidak boleh negatif" + RESET)
-                            except ValueError:
-                                print(RED + BOLD + "Berat barang harus berupa angka." + RESET)
-                    
-                    # menentukan lokasi penjemputan
-                    while True:
-                        lokasi_jemput = input(YELLOW + "Masukkan nama lokasi penjemputan: " + RESET)
-                        if not lokasi_jemput:
-                            print(RED + BOLD + "Lokasi tidak valid." + RESET)
-                            continue
-                        
-                        koordinat_jemput = await get_koordinat(session, lokasi_jemput)
-                        if koordinat_jemput:
-                            break
-                        else:
-                            print(RED + BOLD + "Lokasi penjemputan tidak ditemukan. Silakan coba lagi." + RESET)
-
-                    # menentukan lokasi tujuan
-                    while True:
-                        lokasi_tujuan = input(YELLOW + "Masukkan nama lokasi tujuan: " + RESET)
-                        if not lokasi_tujuan:
-                            print(RED + BOLD + "Lokasi tidak valid." + RESET)
-                            continue
-
-                        koordinat_tujuan = await get_koordinat(session, lokasi_tujuan)
-                        if koordinat_tujuan:
-                            break
-                        else:
-                            print(RED + BOLD + "Lokasi tujuan tidak ditemukan. Silakan coba lagi." + RESET)
-
-                    # menentukan jarak dan menghitung total harga jika koordinat ditemukan
-                    if koordinat_jemput and koordinat_tujuan:
-                        jarak = await get_jarak(session, koordinat_jemput, koordinat_tujuan)
-                        
-                        # perhitungan total harga jika berat barang ada
-                        if jarak:
-                            jarak = round(jarak)
-                            print(f"{MAGENTA}Jarak antara {lokasi_jemput} dan {lokasi_tujuan} adalah {jarak} km.{RESET}")
-                            
-                        # input jarak manual jika jarak tidak ditemukan oleh sistem
-                        else:
-                            print(RED + BOLD + "Gagal menghitung jarak.\n" + RESET)
-                            pilih = input(YELLOW + "Apakah ingin memasukkan jarak manual ? (y/n): " + RESET)
-                            # jika memilih input jarak manual
-                            if pilih.lower() == 'y':
-                                while True:
-                                    try:
-                                        jarak = float(input(YELLOW + "Masukkan jarak (dalam satuan KM): " + RESET))
-                                        jarak = round(jarak)
-                                        break
-                                    except ValueError:
-                                        print(RED + BOLD + "Jarak harus berupa angka." + RESET)
-
-                            # jika tidak memilih input jarak manual, mengulang pesanan
-                            elif pilih.lower() == 'n':
-                                continue
-                            else:
-                                handle_invalid_pilihan()
-
-                        # menghitung total harga jika berat ada   
-                        if berat:
-                            total_harga = layanan_terpilih['harga'] * jarak * berat
-
-                        # menghitung total harga jika berat tidak ada
-                        else:
-                            total_harga = layanan_terpilih['harga'] * jarak 
-                        
-                        # menampilkan berat barang jika berat ada
-                        if berat:
-                            print(f"{MAGENTA}Berat Barang: {berat} kg.{RESET}")
-
-                        print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
-
-                    else:
-                        print("Lokasi tidak ditemukan.")
-                    
-                    # membuat pesanan jika jarak dan total_harga diketahui
-                    if jarak and total_harga:
-                        while True:
-                            confirm = input(YELLOW + "Apakah data yang diinputkan sudah benar? (y/n): " + RESET)
-                            if confirm != 'y' and confirm != 'n':
-                                handle_invalid_pilihan()
-                                continue
-                            else:
+                                jarak = float(input(YELLOW + "Masukkan jarak (dalam satuan KM): " + RESET))
+                                jarak = round(jarak)
                                 break
+                            except ValueError:
+                                print(RED + BOLD + "Jarak harus berupa angka." + RESET)
 
-                        # Menyimpan data pesanan
-                        if confirm.lower() == 'y':
-                            df_pesanan = pd.read_csv('data/table_pesanan.csv', sep=';')
-                            if not df_pesanan['id'].empty:
-                                id = df_pesanan['id'].max() + 1
-                            else:
-                                id = 1
+                    # jika tidak memilih input jarak manual, mengulang pesanan
+                    elif pilih.lower() == 'n':
+                        continue
+                    else:
+                        handle_invalid_pilihan()
 
-                            # Membuat DataFrame untuk pesanan baru
-                            pesanan_baru = pd.DataFrame([{
-                                'id': id,
-                                'user_id': user_id,
-                                'lokasi_jemput': lokasi_jemput,
-                                'lokasi_tujuan': lokasi_tujuan,
-                                'jarak': jarak,
-                                'layanan': layanan_terpilih['layanan'],
-                                'beratBarang': berat,
-                                'total_harga': total_harga,
-                                'status': 'diproses',
-                                'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                            }])
+                # menghitung total harga jika berat ada   
+                if berat:
+                    total_harga = layanan_terpilih['harga'] * jarak * berat
 
-                            # Menyimpan DataFrame ke dalam file CSV
-                            with open('data/table_pesanan.csv', mode='a', newline='', encoding='utf-8') as f:
-                                pesanan_baru.to_csv(f, header=False, index=False, sep=';')
+                # menghitung total harga jika berat tidak ada
+                else:
+                    total_harga = layanan_terpilih['harga'] * jarak 
+                
+                # menampilkan berat barang jika berat ada
+                if berat:
+                    print(f"{MAGENTA}Berat Barang: {berat} kg.{RESET}")
 
-                            print(GREEN+BOLD+"Pesanan telah disimpan.Silahkan menunggu pemrosesan pesanan."+RESET)
-                            input("Tekan Enter untuk melanjutkan...")
+                print(f"{MAGENTA}Total Harga: {total_harga} Rupiah.{RESET}\n")
 
-                        elif confirm.lower() == 'n':
-                            continue  
+            else:
+                print("Lokasi tidak ditemukan.")
+            
+            # membuat pesanan jika jarak dan total_harga diketahui
+            if jarak and total_harga:
+                while True:
+                    confirm = input(YELLOW + "Apakah data yang diinputkan sudah benar? (y/n): " + RESET)
+                    if confirm != 'y' and confirm != 'n':
+                        handle_invalid_pilihan()
+                        continue
+                    else:
                         break
-        
-        except KeyboardInterrupt:
-            pass
+
+                # Menyimpan data pesanan
+                if confirm.lower() == 'y':
+                    df_pesanan = pd.read_csv('data/table_pesanan.csv', sep=';')
+                    if not df_pesanan['id'].empty:
+                        id = df_pesanan['id'].max() + 1
+                    else:
+                        id = 1
+
+                    # Membuat DataFrame untuk pesanan baru
+                    pesanan_baru = pd.DataFrame([{
+                        'id': id,
+                        'user_id': user_id,
+                        'lokasi_jemput': lokasi_jemput,
+                        'lokasi_tujuan': lokasi_tujuan,
+                        'jarak': jarak,
+                        'layanan': layanan_terpilih['layanan'],
+                        'beratBarang': berat,
+                        'total_harga': total_harga,
+                        'status': 'diproses',
+                        'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    }])
+
+                    # Menyimpan DataFrame ke dalam file CSV
+                    with open('data/table_pesanan.csv', mode='a', newline='', encoding='utf-8') as f:
+                        pesanan_baru.to_csv(f, header=False, index=False, sep=';')
+
+                    print(GREEN+BOLD+"Pesanan telah disimpan.Silahkan menunggu pemrosesan pesanan."+RESET)
+                    input("Tekan Enter untuk melanjutkan...")
+
+                elif confirm.lower() == 'n':
+                    continue  
+                break
+    
+
 
 # menampilkan menu admin
-def manu_admin(user_id):
+def menu_admin(user_id):
     while True:
-        os.system('cls')
-        print(GREEN + BOLD + "Menu Admin" + RESET)
-        print("masukkan pilihan :")
-        print("1. konfirmasi pesanan")
-        print("2. manage user")
-        print("3. manage layanan")
-        print("4. manage pesanan")
-        print("5. logout")
-        pilih = input(YELLOW + "masukkan pilihan :" + RESET)
-        
-        # Konfirmasi Pesanan
-        if pilih == "1":
-            konfirmasi_pesanan()
-        # Manage User
-        elif pilih == "2":
-            menu_manage_user(user_id)
-        # Manage Layanan
-        elif pilih == "3":
-            menu_manage_layanan()
-        # Manage Pesanan
-        elif pilih == "4":
-            menu_manage_pesanan(user_id)
-        #logout / kembali ke menu awal
-        elif pilih == "5":
-            break
-        else:
-            handle_invalid_pilihan()
-
+        try:
+            os.system('cls')
+            print(GREEN + BOLD + "Menu Admin" + RESET)
+            print("masukkan pilihan :")
+            print("1. konfirmasi pesanan")
+            print("2. manage user")
+            print("3. manage layanan")
+            print("4. manage pesanan")
+            print("5. logout")
+            pilih = input(YELLOW + "masukkan pilihan :" + RESET)
+            
+            # Konfirmasi Pesanan
+            if pilih == "1":
+                konfirmasi_pesanan()
+            # Manage User
+            elif pilih == "2":
+                menu_manage_user(user_id)
+            # Manage Layanan
+            elif pilih == "3":
+                menu_manage_layanan()
+            # Manage Pesanan
+            elif pilih == "4":
+                menu_manage_pesanan(user_id)
+            #logout / kembali ke menu awal
+            elif pilih == "5":
+                break
+            else:
+                handle_invalid_pilihan()
+                
+        except (KeyboardInterrupt, EOFError):
+            pass
 # menampilkan menu user
 def menu_user(user_id):
     while True:
@@ -280,7 +281,7 @@ def menu_user(user_id):
                 break
             else:
                 handle_invalid_pilihan()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, EOFError):
             pass
 
 
@@ -601,7 +602,7 @@ def main():
                 user = login(username, password)
                 if user:
                     if user['role'] == "admin":
-                        manu_admin(user['id'])
+                        menu_admin(user['id'])
                         os.system('cls')
                     elif user['role'] == "user":
                         menu_user(user['id'])
@@ -633,7 +634,9 @@ def main():
             else:
                 handle_invalid_pilihan()
 
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, EOFError) :
+            # print(RED + "Terjadi kesalahan: " + str(e) + RESET)
+            # input()
             pass
 
 if __name__ == "__main__":
