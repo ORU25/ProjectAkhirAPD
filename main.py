@@ -5,17 +5,21 @@ import os #untuk membersihkan console (pip install os)
 
 from datetime import datetime #untuk mendapatkan waktu
 
-from crud.user import *
-from crud.pesanan import *
-from crud.layanan import *
-from colors import *
-from geolocation import get_jarak, get_koordinat
-from invalid_pilihan import *
+from crud.user import * #import semua fungsi CRUD user
+from crud.pesanan import * #import semua fungsi CRUD pesanan
+from crud.layanan import * #import semua fungsi CRUD layanan
+
+from colors import * #import semua variabel colors untuk merubah warna pada terminal
+from geolocation import * #import semua fungsi untuk mencari lokasi dan jarak
+from invalid_pilihan import * #import fungsi untuk handle invalid pilihan
 
 
 # fungsi login
 def login(username, password):
+    # membaca file csv
     df = pd.read_csv('data/table_user.csv', sep=';')
+
+    # perulangan setiap baris pada dataframe untuk memeriksa apakah username dan password cocok
     for index, row in df.iterrows():
         if row['username'] == username and row['password'] == password:
             data = {'id': row['id'], 'role': row['role']}
@@ -24,18 +28,26 @@ def login(username, password):
 
 # fungsi register
 def register(username, password):
+    # membaca file csv
     df = pd.read_csv('data/table_user.csv', sep=';')
+
+    # validasi jika username yang diinput apakah sudah ada di file csv
     if username in df['username'].values:
         data = {'message' : 'Username sudah terdaftar'}
         return data
 
+    # validasi untuk menentukan id user
     if not df['id'].empty:
+        # mengambil id terbesar lalu ditambahkan 1 untuk menjadi id data yang baru
         user_id = df['id'].max() + 1
     else:
+        # Jika tabel kosong, mulai dengan id 1
+        user_id = 1
 
-        user_id = 1  # Jika tabel kosong, mulai dengan ID 1
+    # menentukan role user
     role = "user"
 
+    # menyusun dataframe baru
     new_data = pd.DataFrame({
         'id': [user_id],
         'username': [username],
@@ -43,9 +55,11 @@ def register(username, password):
         'role': [role]
     })
 
+    # menyimpan dataframe baru
     with open('data/table_user.csv', mode='a', newline='', encoding='utf-8') as f:
         new_data.to_csv(f, header=False, index=False, sep=';')
 
+    # mengembalikan data
     data = {'id': user_id, 'role': role, 'message': 'Pendaftaran berhasil'}
     return data
 
@@ -55,8 +69,9 @@ async def pesan(user_id):
         try:
             os.system('cls')
             print(GREEN+"Pilih Layanan:"+RESET)
-            df = pd.read_csv('data/table_layanan.csv', sep=';')
 
+            # menampilkan layanan yang tersedia
+            df = pd.read_csv('data/table_layanan.csv', sep=';')
             for idx, layanan in enumerate(df['layanan'], start=1):
                 print(f"{idx}. {layanan}")
 
@@ -72,11 +87,10 @@ async def pesan(user_id):
                         break
                     else:
                         handle_invalid_pilihan()
-                    
-                
                 except ValueError:
                     handle_invalid_pilihan()
-
+            
+            
             async with aiohttp.ClientSession() as session:
                     berat = None
 
@@ -132,6 +146,7 @@ async def pesan(user_id):
                         else:
                             print(RED + BOLD + "Gagal menghitung jarak.\n" + RESET)
                             pilih = input(YELLOW + "Apakah ingin memasukkan jarak manual ? (y/n): " + RESET)
+                            # jika memilih input jarak manual
                             if pilih.lower() == 'y':
                                 while True:
                                     try:
@@ -140,18 +155,22 @@ async def pesan(user_id):
                                         break
                                     except ValueError:
                                         print(RED + BOLD + "Jarak harus berupa angka." + RESET)
-                                
+
+                            # jika tidak memilih input jarak manual, mengulang pesanan
                             elif pilih.lower() == 'n':
                                 continue
                             else:
                                 handle_invalid_pilihan()
 
-                        # menghitung total harga    
+                        # menghitung total harga jika berat ada   
                         if berat:
                             total_harga = layanan_terpilih['harga'] * jarak * berat
+
+                        # menghitung total harga jika berat tidak ada
                         else:
                             total_harga = layanan_terpilih['harga'] * jarak 
-
+                        
+                        # menampilkan berat barang jika berat ada
                         if berat:
                             print(f"{MAGENTA}Berat Barang: {berat} kg.{RESET}")
 
@@ -169,13 +188,15 @@ async def pesan(user_id):
                                 continue
                             else:
                                 break
-                            
+
+                        # Menyimpan data pesanan
                         if confirm.lower() == 'y':
                             df_pesanan = pd.read_csv('data/table_pesanan.csv', sep=';')
                             if not df_pesanan['id'].empty:
                                 id = df_pesanan['id'].max() + 1
                             else:
                                 id = 1
+
                             # Membuat DataFrame untuk pesanan baru
                             pesanan_baru = pd.DataFrame([{
                                 'id': id,
@@ -190,6 +211,7 @@ async def pesan(user_id):
                                 'tanggal_pesanan': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             }])
 
+                            # Menyimpan DataFrame ke dalam file CSV
                             with open('data/table_pesanan.csv', mode='a', newline='', encoding='utf-8') as f:
                                 pesanan_baru.to_csv(f, header=False, index=False, sep=';')
 
@@ -215,15 +237,20 @@ def manu_admin(user_id):
         print("4. manage pesanan")
         print("5. logout")
         pilih = input(YELLOW + "masukkan pilihan :" + RESET)
-
+        
+        # Konfirmasi Pesanan
         if pilih == "1":
             konfirmasi_pesanan()
+        # Manage User
         elif pilih == "2":
             menu_manage_user(user_id)
+        # Manage Layanan
         elif pilih == "3":
             menu_manage_layanan()
+        # Manage Pesanan
         elif pilih == "4":
             menu_manage_pesanan(user_id)
+        #logout / kembali ke menu awal
         elif pilih == "5":
             break
         else:
@@ -241,11 +268,14 @@ def menu_user(user_id):
             print("3. logout")
             pilih = input(YELLOW + "masukkan pilihan :"+ RESET)
 
+            # Pesan
             if pilih == "1":
                 asyncio.run(pesan(user_id))
+            # History pemesanan
             elif pilih == "2":
                 history(user_id)
                 input("Tekan Enter untuk melanjutkan...")
+            # Logout / kembali ke menu awal
             elif pilih == "3":
                 break
             else:
@@ -267,6 +297,7 @@ def menu_manage_user(user_id):
         print("5. kembali")
         pilih = input(YELLOW+ "masukkan pilihan :" + RESET)
 
+        # tambah user
         if pilih == "1":
             while True:
                 username = input("Masukkan username: ").strip()
@@ -283,8 +314,9 @@ def menu_manage_user(user_id):
                 if role in ["admin", "user"]:
                     break
                 print(RED + "Role tidak valid. Masukkan 'admin' atau 'user'." + RESET)
-
+            
             user = create_user(username, password, role)
+
             if user['status'] == "success":
                 print(GREEN + user['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
@@ -292,10 +324,12 @@ def menu_manage_user(user_id):
                 print(RED + user['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
 
+        # lihat user
         elif pilih == "2":
             read_user()
             input("Tekan Enter untuk melanjutkan...")
 
+        # ubah user
         elif pilih == "3":
             read_user()
     
@@ -328,6 +362,7 @@ def menu_manage_user(user_id):
                 print(RED + user['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
         
+        # hapus user
         elif pilih == "4":
             read_user()
     
@@ -352,6 +387,7 @@ def menu_manage_user(user_id):
                 print(RED + user['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
         
+        # kembali ke menu admin
         elif pilih == "5":
             break
         else:
@@ -370,6 +406,7 @@ def menu_manage_layanan():
         print("5. kembali")
         pilih = input(YELLOW+ "masukkan pilihan :" + RESET)
 
+        # tambah layanan
         if pilih == "1":
             while True:
                 layanan = input("Masukkan layanan: ").strip()
@@ -399,10 +436,12 @@ def menu_manage_layanan():
                 print(RED + layanan_baru['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
         
+        # lihat layanan
         elif pilih == "2":
             read_layanan()
             input("Tekan Enter untuk melanjutkan...")
         
+        # ubah layanan
         elif pilih == "3":
             read_layanan()
     
@@ -444,6 +483,7 @@ def menu_manage_layanan():
                 print(RED + layanan['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
         
+        # hapus layanan
         elif pilih == "4":
             read_layanan()
 
@@ -463,6 +503,7 @@ def menu_manage_layanan():
                 print(RED + layanan['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
         
+        # kembali ke menu admin
         elif pilih == "5":
             break
 
@@ -479,13 +520,16 @@ def menu_manage_pesanan(user_id):
         print("5. kembali")
         pilih = input(YELLOW+ "masukkan pilihan :" + RESET)
 
+        # tambah pesanan
         if pilih == "1":
             asyncio.run(pesan(user_id))
 
+        # lihat pesanan
         elif pilih == "2":
             read_pesanan()
             input("Tekan Enter untuk melanjutkan...")
 
+        # ubah pesanan
         elif pilih == "3":
             read_pesanan()
 
@@ -505,6 +549,7 @@ def menu_manage_pesanan(user_id):
                 print(RED + pesanan['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
 
+        # hapus pesanan
         elif pilih == "4":
             read_pesanan()
 
@@ -524,6 +569,7 @@ def menu_manage_pesanan(user_id):
                 print(RED + pesanan['message'] + RESET)
                 input("Tekan Enter untuk melanjutkan...")
 
+        # kembali ke menu admin
         elif pilih == "5":
             break
 
@@ -544,6 +590,7 @@ def main():
             print("3. Exit")
             pilih = input("Masukkan pilihan: ")
 
+            # login
             if pilih == "1":
                 
                 # Input username dan password untuk login
@@ -563,7 +610,7 @@ def main():
                     print(RED+BOLD+"Username atau password salah."+RESET)
                     input("Tekan Enter untuk melanjutkan...")
 
-
+            # Register
             elif pilih == "2":
                 # Input username dan password untuk login
                 username = input(YELLOW + "Masukkan username: "+RESET)
@@ -578,10 +625,11 @@ def main():
                 else:
                     print(RED+BOLD+user['message']+RESET)
                     input("Tekan Enter untuk melanjutkan...")
-                    
+
+            # Keluar Program
             elif pilih == "3":
                 break
-
+            
             else:
                 handle_invalid_pilihan()
 

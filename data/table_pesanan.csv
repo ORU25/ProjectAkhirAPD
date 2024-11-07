@@ -2,3 +2,4 @@ id;user_id;lokasi_jemput;lokasi_tujuan;jarak;layanan;beratBarang;total_harga;sta
 1;1;kantor gubernur samarinda;big mall samarinda;5;kurir;5.0;75000;diproses;2024-11-05 06:26:47
 2;1;samarinda;bontang;119;motor;;595000;ditolak;2024-11-05 06:27:15
 4;2;universitas mulawarman;umkt;4;kurir;2.0;24000;diproses;2024-11-05 06:28:35
+5;2;jalan pramuka samarinda;universitas mulawarman;1;motor;;5000;dikonfirmasi;2024-11-07 09:24:47
