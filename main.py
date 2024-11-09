@@ -73,14 +73,19 @@ async def pesan(user_id):
         df = pd.read_csv('data/table_layanan.csv', sep=';')
         for idx, layanan in enumerate(df['layanan'], start=1):
             print(f"{idx}. {layanan}")
-
+        print("0. Keluar")
+        
         # memilih layanan
         while True:
             try:
                 pilihan = int(input(YELLOW+"Masukkan nomor pilihan: "+RESET))
                 
+                # Periksa jika pengguna memilih untuk keluar
+                if pilihan == 0:
+                    break
+
                 # Memastikan nomor yang dipilih dalam rentang yang valid
-                if 1 <= pilihan <= len(df):
+                elif 1 <= pilihan <= len(df):
                     layanan_terpilih = df.iloc[pilihan - 1]
                     print(f"Layanan yang dipilih: {layanan_terpilih['layanan']}\n")
                     break
@@ -88,7 +93,10 @@ async def pesan(user_id):
                     handle_invalid_pilihan()
             except ValueError:
                 handle_invalid_pilihan()
-        
+
+        # Periksa jika pengguna memilih untuk keluar
+        if pilihan == 0:
+            break
         
         async with aiohttp.ClientSession() as session:
             berat = None
@@ -108,7 +116,7 @@ async def pesan(user_id):
             
             # menentukan lokasi penjemputan
             while True:
-                lokasi_jemput = input(YELLOW + "Masukkan nama lokasi penjemputan: " + RESET)
+                lokasi_jemput = input(YELLOW + "Masukkan nama lokasi penjemputan: " + RESET).strip()
                 if not lokasi_jemput:
                     print(RED + BOLD + "Lokasi tidak valid." + RESET)
                     continue
@@ -121,7 +129,7 @@ async def pesan(user_id):
 
             # menentukan lokasi tujuan
             while True:
-                lokasi_tujuan = input(YELLOW + "Masukkan nama lokasi tujuan: " + RESET)
+                lokasi_tujuan = input(YELLOW + "Masukkan nama lokasi tujuan: " + RESET).strip()
                 if not lokasi_tujuan:
                     print(RED + BOLD + "Lokasi tidak valid." + RESET)
                     continue
@@ -135,7 +143,8 @@ async def pesan(user_id):
             # menentukan jarak dan menghitung total harga jika koordinat ditemukan
             if koordinat_jemput and koordinat_tujuan:
                 jarak = await get_jarak(session, koordinat_jemput, koordinat_tujuan)
-                
+
+
                 # perhitungan total harga jika berat barang ada
                 if jarak:
                     jarak = round(jarak)
@@ -151,9 +160,19 @@ async def pesan(user_id):
                             try:
                                 jarak = float(input(YELLOW + "Masukkan jarak (dalam satuan KM): " + RESET))
                                 jarak = round(jarak)
+                                
+                                if jarak > 1000:
+                                    print(RED + BOLD + "Jarak terlalu besar" + RESET)
+                                    continue
+
+                                if jarak <= 0:
+                                    print(RED + BOLD + "Jarak tidak boleh negatif" + RESET)
+                                    continue
                                 break
+                            except OverflowError:
+                                print(RED + BOLD + "Jarak terlalu besar" + RESET)
                             except ValueError:
-                                print(RED + BOLD + "Jarak harus berupa angka." + RESET)
+                                print(RED + BOLD + "Jarak harus berupa angka" + RESET)
 
                     # jika tidak memilih input jarak manual, mengulang pesanan
                     elif pilih.lower() == 'n':
@@ -595,8 +614,19 @@ def main():
             if pilih == "1":
                 
                 # Input username dan password untuk login
-                username = input(YELLOW + "Masukkan username: "+RESET)
-                password = input(YELLOW + "Masukkan password: "+RESET)
+                while True:
+                    username = input(YELLOW + "Masukkan username: "+RESET).strip()
+                    if not username:
+                        print(RED+BOLD+"Username tidak boleh kosong."+RESET)
+                        continue
+                    break
+                
+                while True:
+                    password = input(YELLOW + "Masukkan password: "+RESET).strip()
+                    if not password :
+                        print(RED+BOLD+"Password tidak boleh kosong."+RESET)
+                        continue
+                    break
 
                 # Memeriksa apakah username dan password valid
                 user = login(username, password)
@@ -614,8 +644,20 @@ def main():
             # Register
             elif pilih == "2":
                 # Input username dan password untuk login
-                username = input(YELLOW + "Masukkan username: "+RESET)
-                password = input(YELLOW + "Masukkan password: "+RESET)
+                while True:
+                    username = input(YELLOW + "Masukkan username: "+RESET).strip()
+                    if not username:
+                        print(RED+BOLD+"Username tidak boleh kosong."+RESET)
+                        continue
+                    break
+                
+                while True:
+                    password = input(YELLOW + "Masukkan password: "+RESET).strip()
+                    if not password :
+                        print(RED+BOLD+"Password tidak boleh kosong."+RESET)
+                        continue
+                    break
+
                 user = register(username, password)
 
                 if user and 'role' in user:

@@ -17,7 +17,7 @@ async def get_koordinat(session, location):
                     lon = float(data[0]['lon'])
                     return lat, lon
                 else:
-                    print("Lokasi tidak ditemukan.")
+                    # print("Lokasi tidak ditemukan.")
                     return None            
             else:
                 print("Gagal mengakses API Nominatim.")
