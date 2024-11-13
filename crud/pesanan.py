@@ -26,6 +26,9 @@ async def update_pesanan(id):
     try:
         df = pd.read_csv('data/table_pesanan.csv', sep=';')
         pesanan = df.loc[df['id'] == id]
+        if pesanan.empty:
+            data = {'status': 'failed','message' : 'Pesanan tidak ditemukan'}
+            return data
         berat = None
 
         # Ubah layanan ? kalau diubah berarti ngaruh ke total harga dan ada tidaknya berat barang

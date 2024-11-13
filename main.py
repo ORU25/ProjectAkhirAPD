@@ -241,7 +241,6 @@ async def pesan(user_id):
                 break
     
 
-
 # menampilkan menu admin
 def menu_admin(user_id):
     while True:
@@ -276,6 +275,7 @@ def menu_admin(user_id):
                 
         except (KeyboardInterrupt, EOFError):
             pass
+
 # menampilkan menu user
 def menu_user(user_id):
     while True:

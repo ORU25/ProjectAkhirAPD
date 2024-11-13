@@ -27,14 +27,15 @@ def read_user():
 
 def update_user(id, username, password, role):
     df = pd.read_csv('data/table_user.csv', sep=';')
-    if username in df['username'].values:
-        data = {'status': 'failed' ,'message': 'Username sudah terdaftar'}
-        return data
-    
     user = df.loc[df['id'] == id]
     if user.empty:
         data = {'status': 'failed' ,'message': 'User tidak ditemukan'}
         return data
+    
+    if username in df['username'].values:
+        data = {'status': 'failed' ,'message': 'Username sudah terdaftar'}
+        return data
+    
     
     old_username = user['username'].values[0]
     old_password = user['password'].values[0]
